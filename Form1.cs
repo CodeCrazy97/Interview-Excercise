@@ -42,7 +42,7 @@ namespace VASCOR_Exercise
                     string outputLine = "";
                     string headerInfo = "";  // used to hold BIX info 
                     int inspectionDetailSegmentNum = 0;  // use this to see if we've found the first inspection detail segment
-                    bool BixErrors = false;  // records if an error is encountered in one of the segments
+                    bool BixOrTiErrors = false;  // records if an error is encountered in one of the segments
                     bool VcErrors = false;
 
                     foreach (string line in lines)
@@ -51,15 +51,14 @@ namespace VASCOR_Exercise
                         // get info from Beginning Segment for Automotive Inspection                       
                         if (line.StartsWith("BIX"))
                         {
-                            BixErrors = false;  // there's nothing wrong with the current transaction set (no errors yet encountered)
+                            BixOrTiErrors = false;  // there's nothing wrong with the current transaction set (no errors yet encountered)
 
-                            int indexOfSecondDelim = findNthOccur(line, '*', 2);
                             int indexOfThirdDelim = findNthOccur(line, '*', 3);
 
-                            if (indexOfSecondDelim == -1 || indexOfThirdDelim == -1)
+                            if (indexOfThirdDelim == -1)
                             {
                                 richTextBox1.AppendText("\n--- ERROR! PROBLEM WITH BIX ---\n");
-                                BixErrors = true;
+                                BixOrTiErrors = true;
                                 continue;
                             }
                             try
@@ -67,17 +66,39 @@ namespace VASCOR_Exercise
                                 // get the Inspection date
                                 headerInfo = line.Substring(indexOfThirdDelim, charCountBetweenDelimiters(line.ToString(), 4, '*'));
 
-                                // get the Standard Carrier Alpha Code
-                                headerInfo += " " + line.Substring(indexOfSecondDelim, charCountBetweenDelimiters(line.ToString(), 3, '*'));
                             } catch (Exception e2)
                             {
                                 richTextBox1.AppendText(e2.Message);
-                                BixErrors = true;
+                                BixOrTiErrors = true;
                             }                         
                         } 
 
+                        //  Transport Information
+                        if (line.StartsWith("TI")  && !BixOrTiErrors)
+                        {
+
+                            int indexOfFirstDelim = findNthOccur(line, '*', 1);
+
+                            if (indexOfFirstDelim == -1)
+                            {
+                                richTextBox1.Text = "\n--- ERROR! PROBLEM WITH TI ---\n";
+                                BixOrTiErrors = true;
+                                break;
+                            }
+                            try
+                            {
+                                // Standard Carrier Alpha Code (Transportation Carrier)
+                                headerInfo += " " + line.Substring(indexOfFirstDelim, charCountBetweenDelimiters(line.ToString(), 2, '*'));
+                            } catch (Exception e2)
+                            {
+                                richTextBox1.AppendText(e2.Message);
+                                BixOrTiErrors = true;
+                            }
+
+                        } 
+
                         // collect info from VIN segment 
-                        if (line.StartsWith("VC") && !BixErrors)
+                        if (line.StartsWith("VC") && !BixOrTiErrors)
                         {
                             VcErrors = false;  // no errors encountered yet for this VC segment
                             inspectionDetailSegmentNum = 0; // reset inspection detail segment number so that we collect info and print for next ID segment
@@ -107,7 +128,7 @@ namespace VASCOR_Exercise
                         }
 
                         // Inspection Detail Segment
-                        if (line.StartsWith("ID") && inspectionDetailSegmentNum == 0 && !BixErrors && !VcErrors) // first ID segment after VC
+                        if (line.StartsWith("ID") && inspectionDetailSegmentNum == 0 && !BixOrTiErrors && !VcErrors) // first ID segment after VC
                         {
                             inspectionDetailSegmentNum += 1;
 
@@ -135,7 +156,6 @@ namespace VASCOR_Exercise
                                 outputLine += " " + line.Substring(indexOfSecondDelim, charCountBetweenDelimiters(line.ToString(), 3, '*'));
 
                                 // The first Damage Severity code
-                                Console.WriteLine(charCountBetweenDelimiters(line.ToString(), 3, '*'));
                                 outputLine += " " + line.Substring(indexOfThirdDelim, charCountBetweenDelimiters(line.ToString(), 4, '*'));
 
                             }
