@@ -1,0 +1,30 @@
+This programming exercise contains three files:
+
+1.  Instructions.txt - This document.
+2.  928-08122010334.txt - This is a standard automotive inspection file sent to 
+                          Vascor by a partner.
+3.  VASCOR Ltd 928 Spec V2-4.doc - This is a specification document to tell you 
+                                   how to read the inspection file and what 
+                                   data elements are included.
+
+This programming exercise is a very realistic scenario of something this job 
+will require on a day to day basis.  In the file 928-08122010334.txt the 
+segments are delimited by new lines (CRLF) and the elements are delimited by 
+*.
+
+Your task is to create a simple C# application (can be a simple console 
+application) that does the following:
+
+1.  Reads the 928-08122010334.txt file 
+2.  Outputs the following data for each vehicle in the file (each unique 
+    Vehicle Identification Number) on a separate line, delimited by spaces:
+        - Vehicle Identification Number
+        - Inspection Date
+        - Standard Carrier Alpha Code (Transportation Carrier)
+        - The first Damage Area Code noted for the vehicle.
+        - The first Damage Area Type noted for the vehicle.
+        - The first Damage Severity Code noted for the vehicle.
+
+Output lines should look something like this (example is not from the 
+included file):
+1GT499E77LF280521 20200811 NS   36 34 1
