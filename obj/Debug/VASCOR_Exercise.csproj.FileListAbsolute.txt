@@ -1,0 +1,10 @@
+C:\Users\Ethan\Documents\Work\VASCOR Exercise\VASCOR_Exercise\bin\Debug\VASCOR_Exercise.exe.config
+C:\Users\Ethan\Documents\Work\VASCOR Exercise\VASCOR_Exercise\bin\Debug\VASCOR_Exercise.exe
+C:\Users\Ethan\Documents\Work\VASCOR Exercise\VASCOR_Exercise\bin\Debug\VASCOR_Exercise.pdb
+C:\Users\Ethan\Documents\Work\VASCOR Exercise\VASCOR_Exercise\obj\Debug\VASCOR_Exercise.csprojAssemblyReference.cache
+C:\Users\Ethan\Documents\Work\VASCOR Exercise\VASCOR_Exercise\obj\Debug\VASCOR_Exercise.Form1.resources
+C:\Users\Ethan\Documents\Work\VASCOR Exercise\VASCOR_Exercise\obj\Debug\VASCOR_Exercise.Properties.Resources.resources
+C:\Users\Ethan\Documents\Work\VASCOR Exercise\VASCOR_Exercise\obj\Debug\VASCOR_Exercise.csproj.GenerateResource.cache
+C:\Users\Ethan\Documents\Work\VASCOR Exercise\VASCOR_Exercise\obj\Debug\VASCOR_Exercise.csproj.CoreCompileInputs.cache
+C:\Users\Ethan\Documents\Work\VASCOR Exercise\VASCOR_Exercise\obj\Debug\VASCOR_Exercise.exe
+C:\Users\Ethan\Documents\Work\VASCOR Exercise\VASCOR_Exercise\obj\Debug\VASCOR_Exercise.pdb
