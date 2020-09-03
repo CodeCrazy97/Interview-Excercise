@@ -42,6 +42,8 @@ namespace VASCOR_Exercise
                     string outputLine = "";
                     string headerInfo = "";  // used to hold BIX info 
                     int inspectionDetailSegmentNum = 0;  // use this to see if we've found the first inspection detail segment
+                    bool BixOrTiErrors = false;  // records if an error is encountered in one of the segments
+                    bool VcErrors = false;
 
                     foreach (string line in lines)
                     {
@@ -49,26 +51,33 @@ namespace VASCOR_Exercise
                         // get info from Beginning Segment for Automotive Inspection                       
                         if (line.StartsWith("BIX"))
                         {
+                            BixOrTiErrors = false;  // there's nothing wrong with the current transaction set (no errors yet encountered)
 
                             int indexOfThirdDelim = findNthOccur(line, '*', 3);
                             int indexOfFirstDelim = findNthOccur(line, '*', 1);
 
                             if (indexOfFirstDelim == -1 || indexOfThirdDelim == -1)
                             {
-                                richTextBox1.Text = "\n--- ERROR! PROBLEM WITH BIX ---\n";
-                                break;
+                                richTextBox1.AppendText("\n--- ERROR! PROBLEM WITH BIX ---\n");
+                                BixOrTiErrors = true;
+                                continue;
                             }
+                            try
+                            {
+                                // get the Inspection date
+                                headerInfo = line.Substring(indexOfThirdDelim, charCountBetweenDelimiters(line.ToString(), 4, '*'));
 
-                            // get the Inspection date
-                            headerInfo = line.Substring(indexOfThirdDelim, charCountBetweenDelimiters(line.ToString(), 4, '*'));
-
-                            // get the Standard Carrier Alpha Code
-                            headerInfo += " " + line.Substring(indexOfFirstDelim, charCountBetweenDelimiters(line.ToString(), 2, '*'));
-                                                        
-                        }
+                                // get the Standard Carrier Alpha Code
+                                headerInfo += " " + line.Substring(indexOfFirstDelim, charCountBetweenDelimiters(line.ToString(), 2, '*'));
+                            } catch (Exception e2)
+                            {
+                                richTextBox1.AppendText(e2.Message);
+                                BixOrTiErrors = true;
+                            }                         
+                        } 
 
                         //  Transport Information
-                        if (line.StartsWith("TI"))
+                        if (line.StartsWith("TI")  && !BixOrTiErrors)
                         {
 
                             int indexOfFirstDelim = findNthOccur(line, '*', 1);
@@ -76,24 +85,33 @@ namespace VASCOR_Exercise
                             if (indexOfFirstDelim == -1)
                             {
                                 richTextBox1.Text = "\n--- ERROR! PROBLEM WITH TI ---\n";
+                                BixOrTiErrors = true;
                                 break;
                             }
+                            try
+                            {
+                                // Standard Carrier Alpha Code 
+                                headerInfo += " " + line.Substring(indexOfFirstDelim, charCountBetweenDelimiters(line.ToString(), 2, '*'));
+                            } catch (Exception e2)
+                            {
+                                richTextBox1.AppendText(e2.Message);
+                                BixOrTiErrors = true;
+                            }
 
-                            // Standard Carrier Alpha Code 
-                            headerInfo += " " + line.Substring(indexOfFirstDelim, charCountBetweenDelimiters(line.ToString(), 2, '*'));
-
-                        }
+                        } 
 
                         // collect info from VIN segment 
-                        if (line.StartsWith("VC"))
+                        if (line.StartsWith("VC") && !BixOrTiErrors)
                         {
+                            VcErrors = false;  // no errors encountered yet for this VC segment
                             inspectionDetailSegmentNum = 0; // reset inspection detail segment number so that we collect info and print for next ID segment
                             if (headerInfo.Equals(""))  // empty BIX - invalid!
                             {
                                 richTextBox1.AppendText("--- ERROR! SOMETHING IS MISSING IN THE BIX LOOP ---");
-                                continue; // don't even attempt to print out the VIN - user's might see it and get confused.
+                                VcErrors = true;
+                                continue; // don't even attempt to print out VIN info - user's might see it and get confused.
                             }
-                            
+
                             // Set to a newline, since we're about to look at a new set of vehicles.
                             // Want next set of vehicles on a different line.
                             if (!outputLine.Equals(""))
@@ -101,38 +119,58 @@ namespace VASCOR_Exercise
                                 // Not the first Vehicle in transaction set - add a newline to separate this one from previous.
                                 outputLine = "\n";
                             }
-                            outputLine += headerInfo + " " + line.Substring(findNthOccur(line, '*', 1), charCountBetweenDelimiters(line.ToString(), 2, '*'));
-                                                        
+                            try
+                            {
+                                outputLine += headerInfo + " " + line.Substring(findNthOccur(line, '*', 1), charCountBetweenDelimiters(line.ToString(), 2, '*'));
+                            }
+                            catch (Exception e2)
+                            {
+                                richTextBox1.AppendText(e2.Message);
+                                VcErrors = true;  // we've encountered an error in the VC segment - don't allow info to be collected from the ID segment
+                            }
                         }
 
                         // Inspection Detail Segment
-                        if (line.StartsWith("ID") && inspectionDetailSegmentNum == 0) // first ID segment after VC
+                        if (line.StartsWith("ID") && inspectionDetailSegmentNum == 0 && !BixOrTiErrors && !VcErrors) // first ID segment after VC
                         {
-                            
+                            inspectionDetailSegmentNum += 1;
+
                             int indexOfFirstDelim = findNthOccur(line, '*', 1);
                             int indexOfSecondDelim = findNthOccur(line, '*', 2);
-                            int indexOfLastDelim = getIndexOfLastDelimiterOnLine(line, '*');
+                            int indexOfLastDelim = findNthOccur(line, '*', 3);
                             
                             // something went wrong attempting to get index of one of the delimiters.
                             if (indexOfLastDelim == -1 || indexOfFirstDelim == -1 || indexOfSecondDelim == -1)
                             {
                                 richTextBox1.AppendText("\n--- ERROR! PROBLEM WITH ID SEGMENT ---\n");
+                                if (richTextBox1.Text.Equals(""))  // there's nothing in the text area. Set outputline to empty (this will prevent a pointless newline from being inserted onto the text area when collecting info from the VC segment, as outputline is checked for data to determine if a newline should be inserted)
+                                {
+                                    outputLine = "";
+                                }
                                 continue;
                             }
 
-                            // The first Damage Area Code noted for the vehicle.
-                            outputLine += " " + line.Substring(indexOfFirstDelim, charCountBetweenDelimiters(line.ToString(), 2, '*'));
+                            try
+                            {
+                                // The first Damage Area Code noted for the vehicle.
+                                outputLine += " " + line.Substring(indexOfFirstDelim, charCountBetweenDelimiters(line.ToString(), 2, '*'));
 
-                            // The first Damage Area Type noted for the vehicle.
-                            outputLine += " " + line.Substring(indexOfSecondDelim, charCountBetweenDelimiters(line.ToString(), 2, '*'));
+                                // The first Damage Area Type noted for the vehicle.
+                                outputLine += " " + line.Substring(indexOfSecondDelim, charCountBetweenDelimiters(line.ToString(), 2, '*'));
+
+                            }
+                            catch (Exception e2)
+                            {
+                                richTextBox1.AppendText(e2.Message);
+                                continue;
+                            }
 
                             // The first Damage Severity Code noted for the vehicle.
                             outputLine += " " + line.Substring(indexOfLastDelim);
 
                             // Output information for previous vehicle.
                             richTextBox1.AppendText(outputLine);
-
-                            inspectionDetailSegmentNum += 1;
+ 
                         }
 
                     }
@@ -148,27 +186,11 @@ namespace VASCOR_Exercise
             }
         }
 
-        // Gets the last field in a segment
-        static int getIndexOfLastDelimiterOnLine(String str, char fieldDelimiter)
-        {
-
-            for (int i = str.Length - 1; i >= 0; i--)
-            {
-                
-                if (str[i] == fieldDelimiter)
-                {
-                    return i + 1;  // need plus one because string arrays are zero-indexed
-                }
-
-            }
-            return -1;
-        }
-
         // Get number of characters between the nth and the nth - 1 positions of the fieldDelimiter character in the string str. 
         static int charCountBetweenDelimiters(String str, int n, char fieldDelimiter)
         {
-            int occur = 0;
-            int charCount = 0;
+            int occur = 0;  // number of times we have found the fieldDelimiter character
+            int charCount = 0;  // number of characters between nth and nth -1 occurrences of fieldDelimiter
 
             for (int i = 0; i < str.Length; i++)
             {
@@ -182,13 +204,25 @@ namespace VASCOR_Exercise
                     occur += 1;
                 }
                 
-                if (occur == n) // done counting
+                if (occur == n) // found nth occurrence of the character
                 {
                     return charCount - 1; // need minus one because last occurrence of fieldDelimiter was counted
-                } else if (i == str.Length - 1)  // end of the line
+                } else if (i == str.Length - 1)  // end of the line - don't keep counting
                 {
-                    return i + 1;
-                }
+                    if (occur == n - 1)  // in this case, the field was the last field on the line (there was not a postceding delimiter)
+                    {
+                        if (charCount > 0)
+                        {
+                            return charCount;
+                        } else  // in this case, the last field was the only place that the expected field could have been in - but it wasn't there
+                        {
+                            throw new Exception("\n --- ERROR! THE BELOW LINE IS MISSING AN EXPECTED FIELD:\n" + str + "\n");
+                        }                        
+                    } else
+                    {
+                        throw new Exception("\n --- ERROR! THE BELOW LINE DID NOT CONTAIN AN EXPECTED FIELD:\n" + str + "\n");
+                    }
+                } 
             }
             return -1;
         }
